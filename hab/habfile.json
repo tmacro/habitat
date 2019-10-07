@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "HabFile Spefification",
+  "type": "object",
+  "definitions": {
+    "module": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "should_destroy": {
+          "type": "boolean"
+        },
+        "provides": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "before": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/script"
+          }
+        },
+        "after": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/script"
+          }
+        }
+      }
+    },
+    "biome": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type" : "string"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "habitat": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "biomes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "args_from": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "module": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "biomes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/biome"
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/module"
+      }
+    },
+    "habitats": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/habitat"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "modules",
+    "biomes",
+    "habitats"
+  ]
+}

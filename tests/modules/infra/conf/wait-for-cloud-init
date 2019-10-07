@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import json
+import os.path
+import sys
+import time
+
+fin = "/run/cloud-init/result.json"
+print('Waiting for cloud-init finish...', end='', flush=True)
+while True:
+    if os.path.exists(fin):
+        with open(fin) as f:
+            try:
+                ret = json.load(f)
+            except Exception:
+                ret = None
+        if not ret:
+            print('\nFailed to load results file')
+        elif len(ret['v1']['errors']):
+            print("\nFinished with errors:" + "\n".join(ret['v1']['errors']))
+            sys.exit(1)
+        else:
+            print("\nFinished with no errors")
+            sys.exit(0)
+    else:
+        print(".", end='', flush=True)
+    time.sleep(5)

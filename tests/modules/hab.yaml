@@ -1,0 +1,63 @@
+---
+version: '1.0'
+scripts:
+  - name: wait-for-port
+    path: bin/wait-for-port
+  - name: wait-for-http
+    path: bin/wait-for-http
+  - name: wait-for-dns-record
+    path:  bin/wait-for-dns-record
+  - name: wait-for-kubernetes
+    path: bin/wait-for-kubernetes
+
+modules:
+  - name: infra
+    should_destroy: False
+
+  - name: rancher-bootstrap
+    should_destroy: False
+    depends_on:
+      - infra
+    before:
+      - name: wait-for-dns-record
+        args:
+          - 'rancher.manage.tmacs.cloud'
+          - '1800'
+      - name: wait-for-http
+        args:
+          - 'https://rancher.manage.tmacs.cloud'
+          - '1800'
+  - name: rancher
+    should_destroy: False
+    depends_on:
+      - rancher-bootstrap
+
+  - name: kubeconfig
+    should_destroy: False
+    depends_on:
+      - rancher
+  - name: helm-bootstrap
+    depends_on:
+      - rancher
+      - kubeconfig
+    before:
+      - name: wait-for-kubernetes
+        args:
+          - '-f kubeconf'
+          - '-n 3'
+          - '-t 1800'
+  - name: helm
+    depends_on:
+      - helm-bootstrap
+
+biomes: 
+  - name: production
+    modules:
+      - infra
+      - rancher-bootstrap
+      - rancher
+      - kubeconfig
+      - helm-bootstrap
+      - helm
+
+habitats: []

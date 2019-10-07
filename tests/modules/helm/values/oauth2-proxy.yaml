@@ -1,0 +1,7 @@
+oauth2-proxy:
+  existingSecret: ${release_name}-keycloak-oauth2-proxy-client-secret
+  cookieDomain: '.${root_domain}'
+  issuerDomain: ${keycloak_domain}.${admin_wildcard}.${root_domain}
+  realm: ${keycloak_realm}
+  extraRedirectDomains: 
+    - '${longhorn_domain}.${admin_wildcard}.${root_domain}'

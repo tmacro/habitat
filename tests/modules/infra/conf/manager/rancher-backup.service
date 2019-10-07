@@ -1,0 +1,9 @@
+[Unit]
+Description=Backup Rancher Control Plane
+Conflicts=rancher-manager.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 30
+ExecStart=-/opt/rancher/backup-rancher.sh
+ExecStartPost=/bin/systemctl start rancher-manager-restart.timer

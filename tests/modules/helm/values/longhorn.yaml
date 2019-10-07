@@ -1,0 +1,9 @@
+ingress:
+  enabled: True
+  host: '${longhorn_domain}.${admin_wildcard}.${root_domain}'
+  tls: true
+  tlsSecret: ${longhorn_domain}-${admin_wildcard}-${root_domain}-certificate
+  annotations:
+    certmanager.k8s.io/cluster-issuer: cert-manager-production
+    nginx.ingress.kubernetes.io/auth-signin: https://$host/oauth2/start?rd=$escaped_request_uri
+    nginx.ingress.kubernetes.io/auth-url: https://$host/oauth2/auth

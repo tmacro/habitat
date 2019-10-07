@@ -1,0 +1,10 @@
+[Unit]
+Description=Restart Rancher Control Plane
+
+[Timer]
+OnActiveSec=30
+Unit=rancher-manager.service
+RemainAfterElapse=no
+
+[Install]
+WantedBy=timers.target

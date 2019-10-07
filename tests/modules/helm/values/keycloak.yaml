@@ -1,0 +1,23 @@
+---
+keycloak:
+  keycloak:
+    realmName: '${keycloak_realm}'
+    clients:
+      - clientId: oauth2-proxy
+        enabled: True
+        redirectUris: [ '*' ]
+    keycloak:
+      hostname: '${keycloak_domain}.${admin_wildcard}.${root_domain}'
+      username: '${default_admin_user}'
+      password: '${default_admin_password}'
+      ingress:
+        enabled: True
+        path: /
+        hosts:
+          - '${keycloak_domain}.${admin_wildcard}.${root_domain}'
+        annotations:
+          certmanager.k8s.io/cluster-issuer: cert-manager-production
+        tls:
+          - secretName: ${keycloak_domain}-${admin_wildcard}-${root_domain}-certificate
+            hosts:
+              - '${keycloak_domain}.${admin_wildcard}.${root_domain}'

@@ -1,0 +1,8 @@
+[Unit]
+Description=Backup Rancher Control Plane
+
+[Timer]
+OnCalendar=*-*-* 8:00:00
+
+[Install]
+WantedBy=timers.target
