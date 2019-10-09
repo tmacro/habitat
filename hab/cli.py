@@ -2,8 +2,8 @@ import sys
 import os.path
 from pathlib import PosixPath
 import argparse
-from .env import Environment, Biome
-
+from .env import Environment
+from .biome import Biome
 
 def _exit(status):
     exit_code = 0 if status else 1
@@ -19,7 +19,7 @@ def _confirm(msg, default=False):
     resp = input(f'{msg} ({t}/{f}): ')
     if not resp.strip():
         return default
-    return resp.strip().lower() in TRUTHY       
+    return resp.strip().lower() in TRUTHY
 
 _COMMANDS = {}
 
@@ -68,7 +68,7 @@ def cmd(name):
     return inner
 
 def ask_for_confirmation(msg):
-    def outer(func):    
+    def outer(func):
         def inner(flags, *args, **kwargs):
             if not flags.skip_confirmation and not _confirm(msg):
                 return _exit(False)
@@ -87,7 +87,7 @@ def with_environment(func):
         # env = Environment(hab_config, cwd=flags.config.parent,  modules_dir=flags.modules_dir)
         return func(flags, env, *args, **kwargs)
     return inner
-    
+
 @cmd('_default')
 def default_cmd(name):
     def inner(flags):
