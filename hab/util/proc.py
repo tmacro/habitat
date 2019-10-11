@@ -1,53 +1,63 @@
-class Tailer(Thread):
-    def __init__(self, fd, done, echo=True, file=sys.stderr):
-        super().__init__()
-        self._fd = fd
-        self._output = []
-        self._done = done
-        self._echo = file if echo else None
-        self._out = file
+from tempfile import TemporaryFile
+import sys
+from threading import Thread, Event
+import subprocess
+import shlex
 
-    def run(self):
-        while not self._done.is_set():
-            line = self._fd.readline()
-            self._output.append(line)
-            if self._echo:
-                self._echo.write(line)
-            
-    def output(self):
-        return ''.join(self._output)
+class TBuffer:
+    def __init__(self, echo=True, file=sys.stderr):
+        self._buffer = TemporaryFile()
+        self._echo = file if echo else None
+    
+    def write(self, data):
+        self._buffer.write(data)
+        if self._echo is not None:
+            self._echo.write(data)
+
+    def read(self):
+        self._buffer.seek(0)
+        data = self._buffer.read()
+        self._buffer.close()
+        return data
+
+    @property
+    def fileno(self):
+        return self._buffer.fileno
 
 class Process(Thread):
     def __init__(self, cmd, echo=True, **kwargs):
         super().__init__()
         self._cmd = cmd
         self._kwargs = kwargs
-        self._output  = dict(stdout=[], stderr=[])
+        self.echo = echo
         self._done = Event()
-        self._echo = echo
-           
+        self._stdout = None
+        self._stderr = None
+
     def run(self):
-        self._proc = subprocess.Popen(shlex.split(self._cmd), stderr=subprocess.PIPE, stdout=subprocess.PIPE, encoding="utf-8", **self._kwargs)
-        stdout_tailer = Tailer(self._proc.stdout, self._done, echo=self._echo)
-        stdout_tailer.start()
-        stderr_tailer = Tailer(self._proc.stderr, self._done, echo=self._echo)
-        stderr_tailer.start()
+        if self.echo:
+            self._stdout = TBuffer()
+            self._stderr = TBuffer()
+            self._kwargs['stdout'] = self._stdout
+            self._kwargs['stderr'] = self._stderr
+            self._kwargs['encoding'] = 'utf-8'
+        self._proc = subprocess.Popen(shlex.split(self._cmd), **self._kwargs)
         while self._proc.poll() is None:
             try:
                 self._proc.wait(1)
             except subprocess.TimeoutExpired:
                 pass
         self._done.set()
-        self._output['stdout']  = stdout_tailer.output()
-        self._output['stderr']  = stderr_tailer.output()
 
     def wait(self):
         self._done.wait()
         return self._proc.poll()
 
-    @property
     def stdout(self):
-        return self._output['stdout']
+        return self._stdout.read()
+
+    def stderr(self):
+        return self._stderr.read()
 
 def run(cmd, env=None, **kwargs):
     return Process(cmd, env=env, **kwargs)
