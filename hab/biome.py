@@ -1,7 +1,9 @@
 from .error import (AmbiguousProvidesError, InvalidBiomeError,
-                    InvalidModuleError, NonexistentDependencyError)
+                    InvalidModuleError)
 from .dependency import DependencyGraph
 from .stage import Target, Stage
+from .util.decs import as_list
+from .tfvars import TFVar, VarFileLoader
 
 class Biome:
     def __init__(self, name, env, habfile_path):
@@ -14,6 +16,10 @@ class Biome:
         self._stages = None
         if not self._has_biome:
             raise InvalidBiomeError(self.name)
+
+    @property
+    def env(self):
+        return self._env
 
     @property
     def _has_biome(self):
@@ -79,7 +85,7 @@ class Biome:
         for provides, target in self.targets.items():
             for child in target.module.depends_on:
                 if child not in self.targets:
-                    raise NonexistentDependencyError(target.module.name, child)
+                    raise InvalidModuleError(target.module.name)
                 yield target.id, self.targets[child].id
 
     def _build_graph(self):
@@ -89,6 +95,20 @@ class Biome:
         for parent, child in self._inferred_dependencies():
             graph.add_constraint(parent, child)
         return graph
+
+    def _build_tfvars(self, target):
+        output_vars = {}
+        for provides, target in self.targets.items():
+            for tfvar in target.module.output_variables:
+                output_vars[tfvar] = target
+        tfvars = {}
+        for name in target.module.input_variables:
+            if name in output_vars:
+                tfvars[name] = TFVar(name, VarFileLoader.from_module(target))
+            else:
+                for varfile in self.env.varfiles:
+                    if name in varfile.keys:
+                        tfvars[name] = TFVar(name, varfile)
 
     @as_list
     def _build_stages(self):

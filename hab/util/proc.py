@@ -8,7 +8,7 @@ class TBuffer:
     def __init__(self, echo=True, file=sys.stderr):
         self._buffer = TemporaryFile()
         self._echo = file if echo else None
-    
+
     def write(self, data):
         self._buffer.write(data)
         if self._echo is not None:
@@ -30,11 +30,25 @@ class Process(Thread):
         self._cmd = cmd
         self._kwargs = kwargs
         self.echo = echo
+        self._started = Event()
         self._done = Event()
         self._stdout = None
         self._stderr = None
 
+    @property
+    def cwd(self)
+        return self._kwargs.get('cwd')
+
+    @cwd.setter
+    def cwd(self, value):
+        self._kwargs['cwd'] = value
+
+    @property
+    def started(self):
+        return self._started.is_set()
+
     def run(self):
+        self._started.set()
         if self.echo:
             self._stdout = TBuffer()
             self._stderr = TBuffer()
@@ -54,9 +68,15 @@ class Process(Thread):
         return self._proc.poll()
 
     def stdout(self):
+        if not self.started:
+            self.start()
+            self.wait()
         return self._stdout.read()
 
     def stderr(self):
+        if not self.started:
+            self.start()
+            self.wait()
         return self._stderr.read()
 
 def run(cmd, env=None, **kwargs):

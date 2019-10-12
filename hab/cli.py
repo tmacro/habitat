@@ -55,6 +55,7 @@ def get_args(*args):
     parser.add_argument('--vf', '--var-file', action='append', default=[], type=directory_type, metavar='VARFILE', dest='varfiles', help='Path to .tfvars or .tfvars.json files. Can be used multiple times.')
     parser.add_argument('-c', '--config', action='store', default='hab.yaml', type=file_type, help='Path to the hab configuration file. Defaults to ./hab.yaml.')
     parser.add_argument('-m', '--modules', action='store', default='.', type=directory_type, dest='modules_dir', help='Path to the directory containing your modules. Defaults to the current directory.')
+    parser.add_argument('-s', '--state-dir', action='store', default='.state', type=directory_type, dest='state_dir', help='Path to store terraform statefiles')
     parser.add_argument('-y', '--auto-confirm', action='store_true', dest='skip_confirmation', help='Assume yes to user prompts.')
     parser.add_argument('--start-at', action='store', dest='start_at', help='Start at this module, ignoring dependencies.')
     parser.add_argument('--stop-at', action='store', dest='stop_at', help='Stop executing at the module.')
@@ -83,7 +84,7 @@ def return_as_exit_code(func):
 
 def with_environment(func):
     def inner(flags, *args, **kwargs):
-        env = Environment(flags.config, flags.modules_dir, flags.varfiles)
+        env = Environment(flags.config, flags.modules_dir, flags.varfiles, flags.state_dir)
         # env = Environment(hab_config, cwd=flags.config.parent,  modules_dir=flags.modules_dir)
         return func(flags, env, *args, **kwargs)
     return inner

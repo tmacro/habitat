@@ -8,26 +8,17 @@ class Target:
     def module(self):
         return self._module
 
-    def init(self):
-        pass
+    @property
+    def name(self):
+        return self._module.name
 
-    def validate(self):
-        pass
+    @property
+    def output_variables(self):
+        return self._module.output_variables
 
-    def plan(self):
-        pass
-
-    def apply(self):
-        pass
-
-    def output(self):
-        pass
-
-    def clean(self):
-        pass
-
-    def fclean(self):
-        pass
+    @property
+    def input_variables(self):
+        return self._module.input_variables
 
 class Stage:
     def __init__(self, targets, biome):

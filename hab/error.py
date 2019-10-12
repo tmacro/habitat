@@ -12,3 +12,6 @@ class AmbiguousProvidesError(HabitatError):
 
 class InvalidModuleError(HabitatError):
     _msg = '%s is not a valid module!'
+
+class UnexpectedFlagError(HabitatError):
+    _msg = 'Unexpected flag %s!'

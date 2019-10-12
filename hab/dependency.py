@@ -35,9 +35,12 @@ class DependencyGraph:
         nodes = { name: Node(name) for name in self._nodes.keys() }
         for parent, node in nodes.items():
             for child in self._nodes[parent]:
-                print(nodes.get(child))
                 node.add_dependency(nodes.get(child))
         return nodes
+
+    @property
+    def nodes(self):
+        return self._build_nodes()
 
     def _has_constaint(self, parent, child, deep=False, root=None):
         if parent is root:
