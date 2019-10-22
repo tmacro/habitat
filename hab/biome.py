@@ -3,7 +3,11 @@ from .error import (AmbiguousProvidesError, InvalidBiomeError,
 from .dependency import DependencyGraph
 from .stage import Target, Stage
 from .util.decs import as_list
-from .tfvars import TFVar, VarFileLoader
+from .tfvars import TFVars
+from .util.type import is_iterable, is_string
+from .util.log import Log
+
+_log = Log('biome')
 
 class Biome:
     def __init__(self, name, env, habfile_path):
@@ -23,15 +27,18 @@ class Biome:
 
     @property
     def _has_biome(self):
+        _log.debug('Checking for biome existence')
         return self.name in [b.name for b in self._env.habfile.biomes]
 
     def _load_modules(self):
         biomes_modules = {}
+        _log.debug('Selecting biome modules...')
         for biome in self._env.habfile.biomes:
             if biome.name == self.name:
                 for name in biome.modules:
                     if name not in self._env.modules:
                         raise InvalidModuleError(name)
+                    _log.debug(f'Selected module {name}')
                     biomes_modules[name] = self._env.modules[name]
                 break
         return biomes_modules
@@ -43,9 +50,11 @@ class Biome:
         return self.__modules
 
     def _build_targets(self):
+        _log.debug('Building targets...')
         targets = {}
         for module in self._modules.values():
             if is_iterable(module.provides):
+                _log.debug(f'Module {module.name} provides multiple targets')
                 for provider in module.provides:
                     if provider in targets:
                         raise AmbiguousProvidesError(
@@ -53,7 +62,9 @@ class Biome:
                                 targets[provider].module.name,
                                 provider
                             )
+                    _log.debug(f'- Added Target {provider} from {module.name}')
                     targets[provider] = Target(provider, module)
+                    targets[targets[provider].id] = targets[provider]
             elif is_string(module.provides):
                 if module.provides in targets:
                     raise AmbiguousProvidesError(
@@ -61,6 +72,7 @@ class Biome:
                             targets[module.provides].module.name,
                             module.provides
                         )
+                _log.debug(f'Added Target {module.provides} from {module.name}')
                 targets[module.provides] = Target(module.provides, module)
                 targets[targets[module.provides].id] = targets[module.provides]
         return targets
@@ -72,23 +84,29 @@ class Biome:
         return self._targets
 
     def _inferred_dependencies(self):
+        _log.debug('Inferring module dependencies...')
+        _log.debug('Building output variable index...')
         output_vars = {}
-        for provides, target in self.targets.items():
+        for target in set(self.targets.values()):
             for tfvar in target.module.output_variables:
-                output_vars[tfvar] = target.id
-        for provides, target in self.targets.items():
+                output_vars[tfvar] = target.provides
+        for target in set(self.targets.values()):
             for tfvar in target.module.input_variables:
                 if tfvar in output_vars:
-                    yield target.id, output_vars[tfvar]
+                    _log.debug(f'Matched {tfvar} from {target.name} with {output_vars[tfvar]}')
+                    yield target.provides, output_vars[tfvar]
 
     def _explicit_dependencies(self):
-        for provides, target in self.targets.items():
+        _log.debug('Adding dependencies from habfile...')
+        for target in set(self.targets.values()):
             for child in target.module.depends_on:
                 if child not in self.targets:
                     raise InvalidModuleError(target.module.name)
-                yield target.id, self.targets[child].id
+                _log.debug(f'Adding {self.targets[child].name} as a dependency of {target.name}')
+                yield target.provides, self.targets[child].provides
 
     def _build_graph(self):
+        _log.debug('Building dependency graph...')
         graph = DependencyGraph()
         for parent, child in self._explicit_dependencies():
             graph.add_constraint(parent, child)
@@ -96,25 +114,13 @@ class Biome:
             graph.add_constraint(parent, child)
         return graph
 
-    def _build_tfvars(self, target):
-        output_vars = {}
-        for provides, target in self.targets.items():
-            for tfvar in target.module.output_variables:
-                output_vars[tfvar] = target
-        tfvars = {}
-        for name in target.module.input_variables:
-            if name in output_vars:
-                tfvars[name] = TFVar(name, VarFileLoader.from_module(target))
-            else:
-                for varfile in self.env.varfiles:
-                    if name in varfile.keys:
-                        tfvars[name] = TFVar(name, varfile)
-
     @as_list
     def _build_stages(self):
         graph = self._build_graph()
+        _log.debug('Building stages...')
         for layer in graph.build_layers():
-            targets = [ self.targets[t.name] for t in layer ]
+            targets = [ self.targets[t.id] for t in layer ]
+            _log.debug(f'Built stage with targets: {", ".join(t.name for t in targets)}')
             yield Stage(targets, self)
 
     @property

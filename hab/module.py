@@ -1,16 +1,18 @@
 from uuid import uuid4
 from .parse import parse_tf_input, parse_tf_output
 from . import terraform
-from .util.decs import as_proc
 
 class TFModule:
-    def __init__(self, name, path, statefile, provides=None, depends_on=None):
+    def __init__(self, name, path, statefile, provides=None, depends_on=None, should_destroy=True):
         self.id = uuid4().hex
         self.name = name
         self.path = path
         self.statefile = statefile
+        self.planfile = statefile.with_suffix('.plan')
         self.provides = provides if provides is not None else name
-        self.depends_on = depends_on if depends_on is not None else list()
+        self.depends_on = depends_on if depends_on is not None else tuple()
+        self.should_destroy = should_destroy
+        
         self._input_vars = None
         self._output_vars = None
         self._discovered = False
@@ -44,30 +46,11 @@ class TFModule:
     def __repr__(self):
         return f'<TFModule: {self.name}'
 
-    @as_proc()
-    def init(self, *args, **kwargs):
-        return terraform.init(*args, **kwargs)
-
-    @as_proc()
-    def validate(self, *args, **kwargs):
-        return terraform.validate(*args, **kwargs)
-
-    @as_proc()
-    def plan(self, *args, **kwargs):
-        return terraform.plan(*args, state=self.statefile, **kwargs)
-
-    @as_proc()
-    def apply(self, *args, **kwargs):
-        return terraform.apply(*args, state=self.statefile, **kwargs)
-
-    @as_proc()
-    def output(self, *args,  state=self.statefile, **kwargs):
-        return terraform.output(*args, **kwargs)
-
-    @as_proc()
-    def clean(self, *args, **kwargs):
-        pass
-
-    @as_proc()
-    def fclean(self, *args, **kwargs):
-        pass
+    def _with_path(self):
+        def outer(func):
+            def inner(*args, **kwargs):
+                proc = func(*args, **kwargs)
+                proc.pwd = self.path
+                return proc
+            return inner
+        return outer

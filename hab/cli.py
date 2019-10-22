@@ -4,6 +4,8 @@ from pathlib import PosixPath
 import argparse
 from .env import Environment
 from .biome import Biome
+from .stage import Runner
+
 
 def _exit(status):
     exit_code = 0 if status else 1
@@ -52,7 +54,7 @@ def get_args(*args):
 		description='Easy multi-module terraform')
     parser.set_defaults(confirm=True)
     parser.add_argument('command', action = 'store', type=cmd_type, help='Terraform command to execute.')
-    parser.add_argument('--vf', '--var-file', action='append', default=[], type=directory_type, metavar='VARFILE', dest='varfiles', help='Path to .tfvars or .tfvars.json files. Can be used multiple times.')
+    parser.add_argument('--vf', '--var-file', action='append', default=[], type=file_type, metavar='VARFILE', dest='varfiles', help='Path to .tfvars or .tfvars.json files. Can be used multiple times.')
     parser.add_argument('-c', '--config', action='store', default='hab.yaml', type=file_type, help='Path to the hab configuration file. Defaults to ./hab.yaml.')
     parser.add_argument('-m', '--modules', action='store', default='.', type=directory_type, dest='modules_dir', help='Path to the directory containing your modules. Defaults to the current directory.')
     parser.add_argument('-s', '--state-dir', action='store', default='.state', type=directory_type, dest='state_dir', help='Path to store terraform statefiles')
@@ -82,28 +84,73 @@ def return_as_exit_code(func):
         return _exit(func(*args, **kwargs))
     return inner
 
-def with_environment(func):
+def with_biome(func):
     def inner(flags, *args, **kwargs):
         env = Environment(flags.config, flags.modules_dir, flags.varfiles, flags.state_dir)
-        # env = Environment(hab_config, cwd=flags.config.parent,  modules_dir=flags.modules_dir)
-        return func(flags, env, *args, **kwargs)
+        biome = Biome(flags.biome, env, flags.config)
+        return func(flags, biome, *args, **kwargs)
+    return inner
+
+def with_runner(func):
+    def inner(flags, biome, *args, **kwargs):
+        runner = Runner(biome.stages)
+        return func(flags, runner, *args, **kwargs)
     return inner
 
 @cmd('_default')
 def default_cmd(name):
     def inner(flags):
-        print(f'Unknown module `{name}`')
+        print(f'Unknown command `{name}`')
         return get_args(['--help'])
     return inner
 
-@cmd('test')
+@cmd('init')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_environment
-def test_cmd(flags, env):
-    hab = Biome(flags.biome, env, flags.config)
-    print(hab.stages)
+@with_biome
+@with_runner
+def init(flags, runner):
+    runner.execute('init')
 
+@cmd('validate')
+@ask_for_confirmation('Really do this?')
+@return_as_exit_code
+@with_biome
+@with_runner
+def validate(flags, runner):
+    runner.execute('validate')
+
+@cmd('apply')
+@ask_for_confirmation('Really do this?')
+@return_as_exit_code
+@with_biome
+@with_runner
+def apply(flags, runner):
+    runner.execute('apply')
+
+@cmd('plan')
+@ask_for_confirmation('Really do this?')
+@return_as_exit_code
+@with_biome
+@with_runner
+def plan(flags, runner):
+    runner.execute('plan')
+
+@cmd('fclean')
+@ask_for_confirmation('Really do this?')
+@return_as_exit_code
+@with_biome
+@with_runner
+def fclean(flags, runner):
+    runner.execute('fclean')
+
+@cmd('destroy')
+@ask_for_confirmation('Really do this?')
+@return_as_exit_code
+@with_biome
+def destroy(flags, biome):
+    runner = Runner(list(reversed(biome.stages)))
+    runner.execute('destroy')
 
 def entry():
     args = get_args()

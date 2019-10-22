@@ -1,13 +1,15 @@
 from collections import defaultdict
 from .util.decs import as_list
-from pprint import pprint
+from .util.log import Log
+
+_log = Log('dependency')
 
 class CircularDependencyError(Exception):
     pass
 
 class Node:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, id):
+        self.id = id
         self._dependencies = []
 
     @property
@@ -17,14 +19,15 @@ class Node:
         return 0
 
     def add_dependency(self, node):
-        self._dependencies.append(node)
+        if node not in self._dependencies:
+            self._dependencies.append(node)
 
     @property
     def dependencies(self):
         return self._dependencies
 
     def __repr__(self):
-        return f'<Node: {self.name} deps: {", ".join(d.name for d in self._dependencies)}>'
+        return f'<Node: {self.id} deps: {", ".join(d.id for d in self._dependencies)}>'
 
 
 class DependencyGraph:
@@ -32,7 +35,7 @@ class DependencyGraph:
         self._nodes = defaultdict(list)
 
     def _build_nodes(self):
-        nodes = { name: Node(name) for name in self._nodes.keys() }
+        nodes = { id: Node(id) for id in self._nodes.keys() }
         for parent, node in nodes.items():
             for child in self._nodes[parent]:
                 node.add_dependency(nodes.get(child))
@@ -56,7 +59,7 @@ class DependencyGraph:
         return False
 
     def add_constraint(self, parent, child):
-        print(f'Adding constraint {parent} -> {child}')
+        _log.debug(f'Adding constraint {parent} -> {child}')
         if not self._has_constaint(parent, child, deep=True):
             self._nodes[parent].append(child)
             if child not in self._nodes:

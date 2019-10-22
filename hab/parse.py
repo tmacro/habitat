@@ -93,8 +93,11 @@ def parse_tfvars_json(text):
     for name, value in data.items():
         yield TFVar(name=name, value=value, var_type=TFVarType.CONFIG)
 
+@as_list
 def parse_terraform_output(text):
-    pass
+    data = json.loads(text)
+    for key, info in data.items():
+        yield TFVar(name=key, var_type=info['type'], value=info['value'], sensitive=info['sensitive'])    
 
 @as_list
 def parse_tf_input(text):
