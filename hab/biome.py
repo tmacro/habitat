@@ -10,14 +10,15 @@ from .util.log import Log
 _log = Log('biome')
 
 class Biome:
-    def __init__(self, name, env, habfile_path):
+    def __init__(self, name, env, start_at=None, stop_at=None):
         self.name = name
         self._env = env
-        self._habfile_path = habfile_path
         self._habfile = None
         self._targets = None
         self.__modules = None
         self._stages = None
+        self._start_at = start_at
+        self._stop_at = stop_at
         if not self._has_biome:
             raise InvalidBiomeError(self.name)
 
