@@ -55,12 +55,12 @@ def get_args(*args):
     parser.set_defaults(confirm=True)
     parser.add_argument('command', action = 'store', type=cmd_type, help='Terraform command to execute.')
     parser.add_argument('--vf', '--var-file', action='append', default=[], type=file_type, metavar='VARFILE', dest='varfiles', help='Path to .tfvars or .tfvars.json files. Can be used multiple times.')
-    parser.add_argument('-c', '--config', action='store', default='hab.yaml', type=file_type, help='Path to the hab configuration file. Defaults to ./hab.yaml.')
+    parser.add_argument('-c', '--config', action='store', default='hab.yaml', type=file_type, help='Path to the hab configuration file. Defaults to $PWD/hab.yaml.')
     parser.add_argument('-m', '--modules', action='store', default='.', type=directory_type, dest='modules_dir', help='Path to the directory containing your modules. Defaults to the current directory.')
-    parser.add_argument('-s', '--state-dir', action='store', default='.state', type=directory_type, dest='state_dir', help='Path to store terraform statefiles')
+    parser.add_argument('-s', '--state-dir', action='store', default='.state', type=directory_type, dest='state_dir', help='Path to store terraform statefiles. Defaults to $PWD/.state')
     parser.add_argument('-y', '--auto-confirm', action='store_true', dest='skip_confirmation', help='Assume yes to user prompts.')
-    parser.add_argument('--start-at', action='store', dest='start_at', help='Start at this module, ignoring dependencies.')
-    parser.add_argument('--stop-at', action='store', dest='stop_at', help='Stop executing at the module.')
+    parser.add_argument('--start-at', action='store', dest='start_at', default=None, help='Start at this module, ignoring dependencies.')
+    parser.add_argument('--stop-at', action='store', dest='stop_at', default=None, help='Stop executing at the module.')
     parser.add_argument('-b', '--biome', action='store', required=True, help='Biome to apply')
     return parser.parse_args(*args)
 
@@ -87,7 +87,7 @@ def return_as_exit_code(func):
 def with_biome(func):
     def inner(flags, *args, **kwargs):
         env = Environment(flags.config, flags.modules_dir, flags.varfiles, flags.state_dir)
-        biome = Biome(flags.biome, env, flags.config)
+        biome = Biome(flags.biome, env)
         return func(flags, biome, *args, **kwargs)
     return inner
 
