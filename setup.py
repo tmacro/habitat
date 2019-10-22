@@ -20,7 +20,6 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 #     long_description = '\n'.join((long_description, f.read()))
 
 requirements = [
-    'clint==0.5.1',
 ]
 
 
