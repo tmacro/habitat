@@ -55,23 +55,6 @@
         }
       }
     },
-    "habitat": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "biomes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
     "script": {
       "type": "object",
       "properties": {
@@ -130,18 +113,11 @@
       "items": {
         "$ref": "#/definitions/module"
       }
-    },
-    "habitats": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/habitat"
-      }
     }
   },
   "required": [
     "version",
     "modules",
-    "biomes",
-    "habitats"
+    "biomes"
   ]
 }
