@@ -30,7 +30,7 @@ def format_flags(func):
     return inner
 
 def _format_command(cmd, args, flags):
-    return f'terraform { cmd } { " ".join(flags) } { " ".join(str(a) for a in args) }'
+    return f'terraform { cmd } { " ".join(flags) } { " ".join(str(a) for a in args) }'.rstrip()
 
 @format_flags
 @flag('backend')

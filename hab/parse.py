@@ -9,7 +9,6 @@ import jsonschema
 from jsonschema.exceptions import ValidationError
 from pathlib import PosixPath
 from .habfile import load_habfile
-from pprint import pprint
 
 HABFILE_SCHEMA_PATH = f'{ PosixPath(__file__).resolve().parent / "habfile.json" }'
 with open(HABFILE_SCHEMA_PATH) as f:
@@ -33,13 +32,13 @@ ModuleScript = namedtuple('ModuleScript', ['name', 'args', 'args_from'])
 ModuleScriptArg = namedtuple('ModuleScriptArg', ['name', 'module'])
 
 TFVar = namedtuple('TFVar', [
-        'name', 
-        'var_type', 
-        'value', 
+        'name',
+        'var_type',
+        'value',
         'sensitive'
-    ], 
+    ],
     defaults=[
-        None, 
+        None,
         False
     ])
 
@@ -70,7 +69,7 @@ def _guess_type(value):
     except ValueError:
         return str
     return int
-    
+
 # Converts a dictionary to a namedtuple with matching keys
 def _to_namedtuple(name, dikt):
     dikt_type = namedtuple(name, dikt.keys())
@@ -97,13 +96,13 @@ def parse_tfvars_json(text):
 def parse_terraform_output(text):
     data = json.loads(text)
     for key, info in data.items():
-        yield TFVar(name=key, var_type=info['type'], value=info['value'], sensitive=info['sensitive'])    
+        yield TFVar(name=key, var_type=info['type'], value=info['value'], sensitive=info['sensitive'])
 
 @as_list
 def parse_tf_input(text):
     for tfvar in Patterns.tf_input_var_block.finditer(text):
         yield TFVar(name=tfvar.group('name'), var_type=TFVarType.INPUT)
-        
+
 @as_list
 def parse_tf_output(text):
     for tfvar in Patterns.tf_output_var_block.finditer(text):
@@ -118,7 +117,5 @@ def parse_habfile(text):
     try:
         jsonschema.validate(instance=data, schema=HABFILE_SCHEMA)
     except ValidationError as e:
-        pprint(data)
-        print(e)
         return None
     return load_habfile(data)

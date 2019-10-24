@@ -4,8 +4,8 @@ from pathlib import PosixPath
 import argparse
 from .env import Environment
 from .biome import Biome
-from .stage import Runner
-
+from .runner import Runner
+from .stage import build_stages
 
 def _exit(status):
     exit_code = 0 if status else 1
@@ -84,16 +84,9 @@ def return_as_exit_code(func):
         return _exit(func(*args, **kwargs))
     return inner
 
-def with_biome(func):
-    def inner(flags, *args, **kwargs):
-        env = Environment(flags.config, flags.modules_dir, flags.varfiles, flags.state_dir)
-        biome = Biome(flags.biome, env)
-        return func(flags, biome, *args, **kwargs)
-    return inner
-
 def with_runner(func):
-    def inner(flags, biome, *args, **kwargs):
-        runner = Runner(biome.stages)
+    def inner(flags, stages, *args, **kwargs):
+        runner = Runner(stages)
         return func(flags, runner, *args, **kwargs)
     return inner
 
@@ -107,7 +100,6 @@ def default_cmd(name):
 @cmd('init')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_biome
 @with_runner
 def init(flags, runner):
     runner.execute('init')
@@ -115,7 +107,6 @@ def init(flags, runner):
 @cmd('validate')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_biome
 @with_runner
 def validate(flags, runner):
     runner.execute('validate')
@@ -123,7 +114,6 @@ def validate(flags, runner):
 @cmd('apply')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_biome
 @with_runner
 def apply(flags, runner):
     runner.execute('apply')
@@ -131,7 +121,6 @@ def apply(flags, runner):
 @cmd('plan')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_biome
 @with_runner
 def plan(flags, runner):
     runner.execute('plan')
@@ -139,7 +128,6 @@ def plan(flags, runner):
 @cmd('fclean')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_biome
 @with_runner
 def fclean(flags, runner):
     runner.execute('fclean')
@@ -147,11 +135,13 @@ def fclean(flags, runner):
 @cmd('destroy')
 @ask_for_confirmation('Really do this?')
 @return_as_exit_code
-@with_biome
-def destroy(flags, biome):
-    runner = Runner(list(reversed(biome.stages)))
+def destroy(flags, stages):
+    runner = Runner(list(reversed(stages)))
     runner.execute('destroy')
 
 def entry():
     args = get_args()
-    args.command(args)
+    env = Environment(args.config, args.modules_dir, args.varfiles, args.state_dir)
+    biome = Biome(args.biome, env)
+    stages = build_stages(biome.targets, biome)
+    args.command(args, stages)

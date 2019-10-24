@@ -1,10 +1,11 @@
 from itertools import chain
 
+from ..parse import parse_habfile
+from ..tfvars import VarFileLoader
+from ..util.decs import as_dict, as_list
+from ..util.log import Log
 from .module import TFModule
-from .parse import parse_habfile
-from .tfvars import VarFileLoader
-from .util.decs import as_dict, as_list
-from .util.log import Log
+from .script import Script
 
 _log = Log('environment')
 
@@ -18,15 +19,15 @@ class Environment:
         self._modules = None
         self._habfile = None
 
-    def _load_habfile(self):
-        _log.debug('Loading habfile...')
-        with open(self._habfile_path) as f:
-            return parse_habfile(f.read())
-
     def _get_statefile(self, module):
         if not self._state_dir.exists():
             self._state_dir.mkdir()
         return self._state_dir / f'{module}.tfstate'
+
+    def _load_habfile(self):
+        _log.debug('Loading habfile...')
+        with open(self._habfile_path) as f:
+            return parse_habfile(f.read())
 
     @as_dict
     def _load_modules(self):
@@ -48,6 +49,12 @@ class Environment:
             _log.debug(f'Loaded varfile from {path}')
             yield VarFileLoader.from_file(path)
 
+    @as_dict
+    def _load_scripts(self):
+        _log.debug('Loading scripts...')
+        for script in self.habfile.scripts:
+            yield script.name, Script(script.name, script.path)
+
     @property
     def varfiles(self):
         if self._varfiles is None:
@@ -65,3 +72,9 @@ class Environment:
         if self._habfile is None:
             self._habfile = self._load_habfile()
         return self._habfile
+
+    @property
+    def scripts(self):
+        if self._scripts is None:
+            self._scripts = self._load_scripts()
+        return self._scripts

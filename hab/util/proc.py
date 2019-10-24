@@ -27,7 +27,7 @@ class TBuffer(Thread):
                     self._echo.write(line)
             except ValueError:
                 break
-    
+
     def close(self):
         self._buffer.close()
         self.join()
@@ -65,7 +65,6 @@ class Process(Thread):
         if self.echo:
             self._kwargs['stdout'] = self._kwargs['stderr'] = subprocess.PIPE
             self._kwargs['encoding'] = 'utf-8'
-        print(self._kwargs)
         self._proc = subprocess.Popen(shlex.split(self._cmd), **self._kwargs)
         if self.echo:
             self._stdout = TBuffer(self._proc.stdout).start()
@@ -76,7 +75,7 @@ class Process(Thread):
             except subprocess.TimeoutExpired:
                 pass
         self._done.set()
-        _log.debug(f'{ self._cmd } exited { self._proc.poll() }')
+        _log.debug(f'Commnad { self._cmd } exited { self._proc.poll() }')
 
     def wait(self):
         if not self.started:
