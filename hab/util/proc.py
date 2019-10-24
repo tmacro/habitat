@@ -75,7 +75,7 @@ class Process(Thread):
             except subprocess.TimeoutExpired:
                 pass
         self._done.set()
-        _log.debug(f'Commnad { self._cmd } exited { self._proc.poll() }')
+        _log.debug(f'Command { self._cmd } exited { self._proc.poll() }')
 
     def wait(self):
         if not self.started:

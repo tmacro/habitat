@@ -30,6 +30,5 @@ class Waiter:
 
     def execute(self, **kwargs):
         _flags = [ f.format(**kwargs) for f in self._flags ]
-        print(_flags)
         retcode, stdout = procrun(self._script.cmd(*_flags))
         return retcode == 0
