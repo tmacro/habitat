@@ -81,7 +81,11 @@ def ask_for_confirmation(msg):
 
 def return_as_exit_code(func):
     def inner(*args, **kwargs):
-        return _exit(func(*args, **kwargs))
+        try:
+            return _exit(func(*args, **kwargs))
+        except KeyboardInterrupt:
+            return _exit(0)
+        return _exit(1)
     return inner
 
 def with_runner(func):
