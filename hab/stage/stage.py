@@ -10,11 +10,15 @@ _TARGET_CMD_DEPS = {
     'init': [],
     'validate': [ 'init' ],
     'plan': [ 'init', 'validate' ],
-    'apply': [ 'init', 'validate', 'plan' ],
+    'apply': [ 'init', 'validate', 'plan', 'before' ],
     'output': [ 'init', 'validate', 'plan', 'apply' ],
     'destroy': [],
     'clean': [],
     'fclean': [ 'clean' ],
+}
+
+_TARGET_CMD_FINISH = {
+    'destroy': [ 'after' ]
 }
 
 class Stage:
@@ -54,7 +58,15 @@ class Stage:
             success, _ = getattr(target, dep)(self._tfvars)
             if not success:
                 return False, ''
-        return getattr(target, command)(self._tfvars)
+        success, stdout = getattr(target, command)(self._tfvars)
+        if not success or command not in _TARGET_CMD_FINISH:
+            return success, stdout
+        for finisher in _TARGET_CMD_FINISH.get(command):
+            _success, _ = getattr(target, finisher)(self._tfvars)
+            if not _success:
+                return False, ''
+        return 
+
 
     def execute(self, executor, command):
         tasks = {}

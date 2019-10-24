@@ -53,7 +53,6 @@ class Biome:
         _log.debug('Building targets...')
         targets = {}
         for module in self._modules.values():
-            _log.debug(f'Module {module.name} provides multiple targets')
             for provider in module.provides:
                 if provider in targets:
                     raise AmbiguousProvidesError(
@@ -61,7 +60,7 @@ class Biome:
                             targets[provider].module.name,
                             provider
                         )
-                _log.debug(f'- Added Target {provider} from {module.name}')
+                _log.debug(f'Added Target {provider} from {module.name}')
                 targets[provider] = Target(provider, module)
                 targets[targets[provider].id] = targets[provider]
         return targets

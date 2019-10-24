@@ -5,7 +5,8 @@ from ..tfvars import VarFileLoader
 from ..util.decs import as_dict, as_list
 from ..util.log import Log
 from .module import TFModule
-from .script import Script
+from .waiter import Script, Waiter
+from ..error import InvalidModuleError
 
 _log = Log('environment')
 
@@ -18,6 +19,7 @@ class Environment:
         self._varfiles = None
         self._modules = None
         self._habfile = None
+        self._scripts = None
 
     def _get_statefile(self, module):
         if not self._state_dir.exists():
@@ -39,6 +41,8 @@ class Environment:
                 kwargs['depends_on'] = hab_modules[path.name].depends_on
                 kwargs['should_destroy'] = hab_modules[path.name].should_destroy
                 kwargs['provides'] = hab_modules[path.name].provides if hab_modules[path.name].provides else None
+                kwargs['before'] = self._build_before(hab_modules[path.name]) if hab_modules[path.name].before else None
+                kwargs['after'] = self._build_after(hab_modules[path.name]) if hab_modules[path.name].after else None
             _log.debug(f'Found module {path.name}, depends on: {kwargs.get("depends_on")}, provides: {kwargs.get("provides")}')
             yield path.name, TFModule(path.name, path, self._get_statefile(path.name), **kwargs)
 
@@ -49,6 +53,20 @@ class Environment:
             _log.debug(f'Loaded varfile from {path}')
             yield VarFileLoader.from_file(path)
 
+    @as_list
+    def _build_waiters(self, module, scripts):
+        for script in scripts:
+            _script = self.scripts.get(script.name)
+            if not _script:
+                raise InvalidModuleError(module)
+        yield Waiter(_script, script.args)
+
+    def _build_before(self, module):
+        return self._build_waiters(module.name, module.before)
+
+    def _build_after(self, module):
+        return self._build_waiters(module.name, module.after)
+        
     @as_dict
     def _load_scripts(self):
         _log.debug('Loading scripts...')

@@ -62,3 +62,19 @@ class Target:
     def fclean(self, tfvars, *args, **kwargs):
         cmd = terraform.fclean(self.module.path / '.terraform', self.module.statefile.with_suffix('.tfstate.backup'))
         return self._run(cmd)
+
+    def before(self, tfvars, *args, **kwargs):
+        for waiter in self._module.before:
+            _kwargs = tfvars.collect(*waiter.args)
+            success = waiter.execute(**_kwargs)
+            if not success:
+                return False, ''
+        return True, ''
+
+    def after(self, tfvars, *args, **kwargs):
+        for waiter in self._module.after:
+            _kwargs = tfvars.collect(*waiter.args)
+            success = waiter.execute(**_kwargs)
+            if not success:
+                return False, ''
+        return True, ''

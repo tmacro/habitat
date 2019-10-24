@@ -57,6 +57,9 @@
     },
     "script": {
       "type": "object",
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "type": "string"
@@ -65,20 +68,6 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
-        },
-        "args_from": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "module": {
-                "type": "string"
-              }
-            }
           }
         }
       }

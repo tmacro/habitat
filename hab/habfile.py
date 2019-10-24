@@ -6,7 +6,7 @@ Habitat = namedtuple('Habitat', ['name', 'biomes'] )
 Biome = namedtuple('Biome', ['name', 'modules'])
 Module = namedtuple('Module', ['name', 'should_destroy', 'before', 'after', 'provides', 'depends_on'])
 Script = namedtuple('Script', ['name', 'path'])
-ModuleScript = namedtuple('ModuleScript', ['name', 'args', 'args_from'])
+ModuleScript = namedtuple('ModuleScript', ['name', 'args'])
 ModuleScriptArg = namedtuple('ModuleScriptArg', ['name', 'module'])
 
 @as_tuple
@@ -14,13 +14,7 @@ def _load_module_scripts(data):
     for script in data:
         yield ModuleScript(
             name=script.get('name'),
-            args=tuple(script.get('args')),
-            args_from=tuple(
-                    ModuleScriptArg(
-                        name=a.get('name'),
-                        module=a.get('module')
-                    ) for a in script.get('args_from', [])
-                )
+            args=tuple(script.get('args', [])),
         )
 
 @as_tuple
